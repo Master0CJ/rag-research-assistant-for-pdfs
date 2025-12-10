@@ -17,7 +17,7 @@
 
 ## 🌟 Overview
 
-Research Paper Assistant is a sophisticated RAG (Retrieval-Augmented Generation) powered knowledge management system that transforms how researchers interact with academic literature. Built with modern web technologies and AI capabilities, it provides intelligent document analysis, summarization, and methodology extraction specifically tailored for educational and research purposes.
+Research Paper Assistant is a sophisticated RAG (Retrieval-Augmented Generation) system that transforms how researchers interact with academic literature. Built with modern web technologies and AI capabilities, it provides intelligent document analysis, summarization, and methodology extraction specifically tailored for educational and research purposes.
 
 ## ✨ Features
 
@@ -82,14 +82,14 @@ graph TB
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rashmithahansamal/RAG-KMS.git
-   cd RAG-KMS
+   git clone [https://github.com/rashmithahansamal/rag-research-assistant-for-pdfs.git](https://github.com/Master0CJ/rag-research-assistant-for-pdfs).git
+   cd rag-research-assistant-for-pdfs
    ```
 
 2. **Create virtual environment**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   venv\Scripts\activate
    ```
 
 3. **Install dependencies**
@@ -131,7 +131,7 @@ docker run -d -p 8080:8080 \
 ## 📁 Project Structure
 
 ```
-RAG-KMS/
+rag-research-assistant-for-pdfs/
 ├── 📁 app/
 │   ├── 📄 main.py                 # Flask application entry point
 │   ├── 📄 config.py               # Configuration management
