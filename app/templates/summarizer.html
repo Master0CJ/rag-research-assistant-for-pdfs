@@ -1,1 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Paper Summarizer - Research Paper Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Research Paper Assistant</h1>
+            </div>
+            <nav class="nav">
+                <span class="nav-item" onclick="window.location.href='/'">Quiz Bot</span>
+                <span class="nav-item active"> Paper Summarizer</span>
+                <span class="nav-item" onclick="window.location.href='/methodology'">Extract Methodology</span>
+            </nav>
+        </div>
+    </header>
 
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="stats-card">
+                <div class="stat-item">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>
+                        <span class="stat-number" id="papers-count">0</span>
+                        <span class="stat-label">Papers Uploaded</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-chart-line"></i>
+                    <div>
+                        <span class="stat-number" id="summaries-count">0</span>
+                        <span class="stat-label">Summaries Generated</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h3>Recent Activity</h3>
+                <div id="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-file-text"></i>
+                        <span>Welcome to Paper Summarizer</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <div class="card-header">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Research Paper Summarizer</h2>
+                </div>
+                <div class="card-body">
+                    <form id="summarizer-upload-form">
+                        <div class="upload-area" id="summarizer-upload-area">
+                            <i class="fas fa-file-pdf upload-icon"></i>
+                            <h3>Upload & Summarize Research Paper</h3>
+                            <p>Drag & drop your PDF here or <span class="browse-link">Choose File</span></p>
+                            <p class="file-types">Supports: PDF files only</p>
+                            <input type="file" id="summarizer-file-input" accept=".pdf" hidden>
+                        </div>
+                        <div id="summarizer-file-list" class="file-list"></div>
+                        
+                        <!-- Paper Metadata Form -->
+                        <div class="metadata-form">
+                            <h4><i class="fas fa-info-circle"></i> Paper Information (Optional)</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="paper-title">Title</label>
+                                    <input type="text" id="paper-title" placeholder="Enter paper title..." class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="paper-authors">Authors</label>
+                                    <input type="text" id="paper-authors" placeholder="e.g., Smith, J., Johnson, A." class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="paper-year">Year</label>
+                                    <input type="number" id="paper-year" placeholder="e.g., 2023" min="1900" max="2030" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="paper-journal">Journal</label>
+                                    <input type="text" id="paper-journal" placeholder="e.g., Nature, Science" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="btn-secondary" id="upload-only-btn" disabled>
+                                <i class="fas fa-upload"></i>
+                                Upload Document
+                            </button>
+                            <button type="submit" class="btn-primary btn-large" id="summarize-btn" disabled>
+                                <i class="fas fa-magic"></i>
+                                Summarize
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Response Section -->
+            <div class="card response-section">
+                <div class="card-header">
+                    <i class="fas fa-file-text"></i>
+                    <h2>Paper Summary & Analysis</h2>
+                </div>
+                <div class="card-body">
+                    <div id="summarizer-response-content" class="response-content">
+                        <div class="placeholder">
+                            <i class="fas fa-file-text"></i>
+                            <p>Upload a research paper to get AI-powered summary and analysis...</p>
+                            <div class="features-list">
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Research objectives extraction</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Methodology analysis</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Key findings summary</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Conclusions and implications</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        let papersCount = 0;
+        let summariesCount = 0;
+        let uploadedFileData = null;
+
+        // Initialize
+        updateStats();
+        initializeFileUpload();
+
+        function initializeFileUpload() {
+            const uploadArea = document.getElementById('summarizer-upload-area');
+            const fileInput = document.getElementById('summarizer-file-input');
+            const fileList = document.getElementById('summarizer-file-list');
+            const uploadBtn = document.getElementById('upload-only-btn');
+            const summarizeBtn = document.getElementById('summarize-btn');
+            const browseLink = uploadArea.querySelector('.browse-link');
+
+            // Browse link click
+            browseLink.addEventListener('click', () => fileInput.click());
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('drag-over');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            });
+
+            // Upload only button
+            uploadBtn.addEventListener('click', () => {
+                uploadDocument();
+            });
+
+            // Form submission (summarize)
+            document.getElementById('summarizer-upload-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                summarizeDocument();
+            });
+        }
+
+        function handleFiles(files) {
+            const fileList = document.getElementById('summarizer-file-list');
+            const uploadBtn = document.getElementById('upload-only-btn');
+            const summarizeBtn = document.getElementById('summarize-btn');
+
+            // Only allow single PDF file
+            if (files.length > 1) {
+                showToast('Please upload only one research paper', 'warning');
+                files = [files[0]];
+            }
+
+            // Validate PDF files
+            const validFiles = files.filter(file => file.type === 'application/pdf');
+            
+            if (validFiles.length !== files.length) {
+                showToast('Only PDF files are supported', 'warning');
+            }
+
+            if (validFiles.length === 0) {
+                uploadBtn.disabled = true;
+                summarizeBtn.disabled = true;
+                return;
+            }
+
+            // Display files
+            fileList.innerHTML = '';
+            validFiles.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <i class="fas fa-file-pdf"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            uploadBtn.disabled = false;
+            summarizeBtn.disabled = false;
+            uploadedFileData = validFiles[0];
+        }
+
+        async function uploadDocument() {
+            if (!uploadedFileData) return;
+
+            showLoading();
+            const uploadBtn = document.getElementById('upload-only-btn');
+            uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', uploadedFileData);
+
+            // Add metadata
+            const metadata = {
+                title: document.getElementById('paper-title').value.trim() || '',
+                authors: document.getElementById('paper-authors').value.trim() || '',
+                year: document.getElementById('paper-year').value.trim() || '',
+                journal: document.getElementById('paper-journal').value.trim() || ''
+            };
+            formData.append('metadata', JSON.stringify(metadata));
+
+            try {
+                const response = await fetch('/summarizer/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Document uploaded successfully!', 'success');
+                    papersCount++;
+                    updateStats();
+                    addActivity('Document uploaded', 'upload');
+                } else {
+                    showToast(result.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error uploading document', 'error');
+            } finally {
+                hideLoading();
+                uploadBtn.disabled = false;
+            }
+        }
+
+        async function summarizeDocument() {
+            if (!uploadedFileData) return;
+
+            showLoading();
+            const summarizeBtn = document.getElementById('summarize-btn');
+            summarizeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/summarizer/summarize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        filename: uploadedFileData.name
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Paper summarized successfully!', 'success');
+                    summariesCount++;
+                    updateStats();
+                    addActivity('Paper summarized', 'summarize');
+                    displaySummary(result);
+                    
+                    // Reset form
+                    resetForm();
+                } else {
+                    showToast(result.error || 'Summarization failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error generating summary', 'error');
+            } finally {
+                hideLoading();
+                summarizeBtn.disabled = false;
+            }
+        }
+
+        function displaySummary(result) {
+            const responseContent = document.getElementById('summarizer-response-content');
+            responseContent.innerHTML = `
+                <div class="response-item">
+                    <div class="summary-header">
+                        <h4><i class="fas fa-file-text"></i> Paper Summary</h4>
+                        <div class="paper-info">
+                            <span><strong>File:</strong> ${result.filename || 'N/A'}</span>
+                            ${result.metadata && result.metadata.title ? `<span><strong>Title:</strong> ${result.metadata.title}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="summary-content">
+                        ${formatSummaryText(result.summary)}
+                    </div>
+                    <div class="summary-timestamp">
+                        <small>Generated at ${new Date().toLocaleString()}</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatSummaryText(text) {
+            return text.replace(/\n/g, '<br>')
+                      .replace(/(\d+\)\s*[^:]+:)/g, '<h5>$1</h5>')
+                      .replace(/^([A-Z\s]+:)/gm, '<h4>$1</h4>');
+        }
+
+        function resetForm() {
+            document.getElementById('summarizer-file-input').value = '';
+            document.getElementById('summarizer-file-list').innerHTML = '';
+            document.getElementById('paper-title').value = '';
+            document.getElementById('paper-authors').value = '';
+            document.getElementById('paper-year').value = '';
+            document.getElementById('paper-journal').value = '';
+            document.getElementById('upload-only-btn').disabled = true;
+            document.getElementById('summarize-btn').disabled = true;
+            uploadedFileData = null;
+        }
+
+        function updateStats() {
+            document.getElementById('papers-count').textContent = papersCount;
+            document.getElementById('summaries-count').textContent = summariesCount;
+        }
+
+        function addActivity(text, type) {
+            const activityList = document.getElementById('activity-list');
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            
+            const icon = type === 'upload' ? 'fa-upload' : 'fa-file-text';
+            activityItem.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${text}</span>
+            `;
+            
+            activityList.insertBefore(activityItem, activityList.firstChild);
+            
+            // Keep only last 5 activities
+            const activities = activityList.querySelectorAll('.activity-item');
+            if (activities.length > 5) {
+                activityList.removeChild(activities[activities.length - 1]);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
