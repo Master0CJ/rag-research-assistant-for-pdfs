@@ -1,1 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Paper Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Research Paper Assistant</h1>
+            </div>
+            <nav class="nav">
+                <span class="nav-item active">Quiz Bot</span>
+                <span class="nav-item" onclick="window.location.href='/summarizer'"> Paper Summarizer</span>
+                <span class="nav-item" onclick="window.location.href='/methodology'">Extract Methodology</span>
+            </nav>
+        </div>
+    </header>
 
+    <!-- Main Container -->
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="stats-card">
+                <div class="stat-item">
+                    <i class="fas fa-file-alt"></i>
+                    <div>
+                        <span class="stat-number" id="doc-count">0</span>
+                        <span class="stat-label">Documents</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-question-circle"></i>
+                    <div>
+                        <span class="stat-number" id="query-count">0</span>
+                        <span class="stat-label">Queries</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h3>Recent Activity</h3>
+                <div id="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-upload"></i>
+                        <span>Welcome to Research Paper Assistant</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <div class="card-header">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h2>Upload Documents</h2>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form">
+                        <div class="upload-area" id="upload-area">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h3>Drag & Drop files here</h3>
+                            <p>or <span class="browse-link">browse files</span></p>
+                            <p class="file-types">Supports: PDF, TXT files</p>
+                            <input type="file" id="file-input" multiple accept=".pdf,.txt" hidden>
+                        </div>
+                        <div id="file-list" class="file-list"></div>
+                        <button type="submit" class="btn-primary" id="upload-btn" disabled>
+                            <i class="fas fa-upload"></i>
+                            Upload Documents
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Query Section -->
+            <div class="card query-section">
+                <div class="card-header">
+                    <i class="fas fa-search"></i>
+                    <h2>Ask Questions</h2>
+                </div>
+                <div class="card-body">
+                    <div class="search-container">
+                        <textarea 
+                            id="question-input" 
+                            placeholder="Ask anything about your uploaded documents..."
+                            rows="3"
+                        ></textarea>
+                        <button id="submit-question" class="btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Ask Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Response Section -->
+            <div class="card response-section">
+                <div class="card-header">
+                    <i class="fas fa-robot"></i>
+                    <h2>AI Response</h2>
+                </div>
+                <div class="card-body">
+                    <div id="response-content" class="response-content">
+                        <div class="placeholder">
+                            <i class="fas fa-comments"></i>
+                            <p>Your AI responses will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        let uploadedFiles = [];
+        let queryCount = 0;
+        let docCount = 0;
+
+        // DOM Elements
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const uploadBtn = document.getElementById('upload-btn');
+        const browseLink = document.querySelector('.browse-link');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        // Initialize
+        updateStats();
+
+        // File upload functionality
+        browseLink.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            uploadedFiles = files;
+            displayFiles(files);
+            uploadBtn.disabled = files.length === 0;
+        }
+
+        function displayFiles(files) {
+            fileList.innerHTML = '';
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <i class="fas fa-file-${getFileIcon(file.name)}"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function getFileIcon(filename) {
+            if (filename.endsWith('.pdf')) return 'pdf';
+            if (filename.endsWith('.txt')) return 'alt';
+            return 'alt';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Upload form submission
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (uploadedFiles.length === 0) return;
+
+            showLoading();
+            const formData = new FormData();
+            
+            for (let file of uploadedFiles) {
+                formData.append('file', file);
+            }
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Documents uploaded successfully!', 'success');
+                    docCount += uploadedFiles.length;
+                    updateStats();
+                    addActivity('Uploaded documents', 'upload');
+                    
+                    // Reset form
+                    fileInput.value = '';
+                    fileList.innerHTML = '';
+                    uploadedFiles = [];
+                    uploadBtn.disabled = true;
+                } else {
+                    showToast(result.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error uploading files', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Question submission
+        document.getElementById('submit-question').addEventListener('click', async () => {
+            const question = document.getElementById('question-input').value.trim();
+            if (!question) {
+                showToast('Please enter a question', 'warning');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question })
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displayResponse(result.response, question);
+                    queryCount++;
+                    updateStats();
+                    addActivity('Asked question', 'question');
+                    document.getElementById('question-input').value = '';
+                } else {
+                    showToast(result.error || 'Query failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error getting response', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function displayResponse(response, question) {
+            const responseContent = document.getElementById('response-content');
+            responseContent.innerHTML = `
+                <div class="response-item">
+                    <div class="question">
+                        <i class="fas fa-user"></i>
+                        <strong>Your Question:</strong> ${question}
+                    </div>
+                    <div class="answer">
+                        <i class="fas fa-robot"></i>
+                        <strong>AI Response:</strong>
+                        <div class="answer-content">${response.answer}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            document.getElementById('doc-count').textContent = docCount;
+            document.getElementById('query-count').textContent = queryCount;
+        }
+
+        function addActivity(text, type) {
+            const activityList = document.getElementById('activity-list');
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            
+            const icon = type === 'upload' ? 'fa-upload' : 'fa-question-circle';
+            activityItem.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${text}</span>
+            `;
+            
+            activityList.insertBefore(activityItem, activityList.firstChild);
+            
+            // Keep only last 5 activities
+            const activities = activityList.querySelectorAll('.activity-item');
+            if (activities.length > 5) {
+                activityList.removeChild(activities[activities.length - 1]);
+            }
+        }
+
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+
+        // Enter key support for textarea
+        document.getElementById('question-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('submit-question').click();
+            }
+        });
+    </script>
+</body>
+</html>
