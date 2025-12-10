@@ -1,1 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extract Methodology - Research Paper Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Research Paper Assistant</h1>
+            </div>
+            <nav class="nav">
+                <span class="nav-item" onclick="window.location.href='/'">Quiz Bot</span>
+                <span class="nav-item" onclick="window.location.href='/summarizer'">Paper Summarizer</span>
+                <span class="nav-item active">Extract Methodology</span>
+            </nav>
+        </div>
+    </header>
 
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="stats-card">
+                <div class="stat-item">
+                    <i class="fas fa-file-pdf"></i>
+                    <div>
+                        <span class="stat-number" id="papers-count">0</span>
+                        <span class="stat-label">Papers Uploaded</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-cogs"></i>
+                    <div>
+                        <span class="stat-number" id="methodology-count">0</span>
+                        <span class="stat-label">Methodologies Extracted</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h3>Recent Activity</h3>
+                <div id="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-cogs"></i>
+                        <span>Welcome to Methodology Extractor</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <div class="card-header">
+                    <i class="fas fa-cogs"></i>
+                    <h2>Extract Research Methodology</h2>
+                </div>
+                <div class="card-body">
+                    <form id="methodology-upload-form">
+                        <div class="upload-area" id="methodology-upload-area">
+                            <i class="fas fa-cogs upload-icon"></i>
+                            <h3>Upload research paper for methodology analysis</h3>
+                            <p>Drag & drop your PDF here or <span class="browse-link">Choose File</span></p>
+                            <p class="file-types">Supports: PDF files only</p>
+                            <input type="file" id="methodology-file-input" accept=".pdf" hidden>
+                        </div>
+                        <div id="methodology-file-list" class="file-list"></div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="btn-secondary" id="upload-only-btn" disabled>
+                                <i class="fas fa-upload"></i>
+                                Upload Document
+                            </button>
+                            <button type="submit" class="btn-primary btn-large" id="extract-methodology-btn" disabled>
+                                <i class="fas fa-cogs"></i>
+                                Extract Methodology
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Response Section -->
+            <div class="card response-section">
+                <div class="card-header">
+                    <i class="fas fa-cogs"></i>
+                    <h2>Methodology Analysis</h2>
+                </div>
+                <div class="card-body">
+                    <div id="methodology-response-content" class="response-content">
+                        <div class="placeholder">
+                            <i class="fas fa-cogs"></i>
+                            <p>Upload a research paper to extract and analyze its methodology...</p>
+                            <div class="features-list">
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Research design identification</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Data collection methods</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Analysis techniques</span>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Study limitations</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Analyzing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        let papersCount = 0;
+        let methodologyCount = 0;
+        let uploadedFileData = null;
+
+        // Initialize
+        updateStats();
+        initializeFileUpload();
+
+        function initializeFileUpload() {
+            const uploadArea = document.getElementById('methodology-upload-area');
+            const fileInput = document.getElementById('methodology-file-input');
+            const fileList = document.getElementById('methodology-file-list');
+            const uploadBtn = document.getElementById('upload-only-btn');
+            const extractBtn = document.getElementById('extract-methodology-btn');
+            const browseLink = uploadArea.querySelector('.browse-link');
+
+            // Browse link click
+            browseLink.addEventListener('click', () => fileInput.click());
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('drag-over');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            });
+
+            // Upload only button
+            uploadBtn.addEventListener('click', () => {
+                uploadDocument();
+            });
+
+            // Form submission (extract methodology)
+            document.getElementById('methodology-upload-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                extractMethodology();
+            });
+        }
+
+        function handleFiles(files) {
+            const fileList = document.getElementById('methodology-file-list');
+            const uploadBtn = document.getElementById('upload-only-btn');
+            const extractBtn = document.getElementById('extract-methodology-btn');
+
+            // Only allow single PDF file
+            if (files.length > 1) {
+                showToast('Please upload only one research paper', 'warning');
+                files = [files[0]];
+            }
+
+            // Validate PDF files
+            const validFiles = files.filter(file => file.type === 'application/pdf');
+            
+            if (validFiles.length !== files.length) {
+                showToast('Only PDF files are supported', 'warning');
+            }
+
+            if (validFiles.length === 0) {
+                uploadBtn.disabled = true;
+                extractBtn.disabled = true;
+                return;
+            }
+
+            // Display files
+            fileList.innerHTML = '';
+            validFiles.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <i class="fas fa-file-pdf"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            uploadBtn.disabled = false;
+            extractBtn.disabled = false;
+            uploadedFileData = validFiles[0];
+        }
+
+        async function uploadDocument() {
+            if (!uploadedFileData) return;
+
+            showLoading();
+            const uploadBtn = document.getElementById('upload-only-btn');
+            uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', uploadedFileData);
+
+            try {
+                const response = await fetch('/methodology/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Document uploaded successfully!', 'success');
+                    papersCount++;
+                    updateStats();
+                    addActivity('Document uploaded', 'upload');
+                } else {
+                    showToast(result.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error uploading document', 'error');
+            } finally {
+                hideLoading();
+                uploadBtn.disabled = false;
+            }
+        }
+
+        async function extractMethodology() {
+            if (!uploadedFileData) return;
+
+            showLoading();
+            const extractBtn = document.getElementById('extract-methodology-btn');
+            extractBtn.disabled = true;
+
+            try {
+                const response = await fetch('/methodology/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        filename: uploadedFileData.name
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Methodology extracted successfully!', 'success');
+                    methodologyCount++;
+                    updateStats();
+                    addActivity('Methodology extracted', 'methodology');
+                    displayMethodology(result);
+                    
+                    // Reset form
+                    resetForm();
+                } else {
+                    showToast(result.error || 'Extraction failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error extracting methodology', 'error');
+            } finally {
+                hideLoading();
+                extractBtn.disabled = false;
+            }
+        }
+
+        function displayMethodology(result) {
+            const responseContent = document.getElementById('methodology-response-content');
+            responseContent.innerHTML = `
+                <div class="response-item">
+                    <div class="methodology-header">
+                        <h4><i class="fas fa-cogs"></i> Methodology Analysis</h4>
+                        <div class="paper-info">
+                            <span><strong>File:</strong> ${result.filename || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="methodology-content">
+                        ${formatMethodologyText(result.methodology)}
+                    </div>
+                    <div class="methodology-timestamp">
+                        <small>Generated at ${new Date().toLocaleString()}</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatMethodologyText(text) {
+            return text.replace(/\n/g, '<br>')
+                      .replace(/(\d+\)\s*[^:]+:)/g, '<h5>$1</h5>')
+                      .replace(/^([A-Z\s]+:)/gm, '<h4>$1</h4>');
+        }
+
+        function resetForm() {
+            document.getElementById('methodology-file-input').value = '';
+            document.getElementById('methodology-file-list').innerHTML = '';
+            document.getElementById('upload-only-btn').disabled = true;
+            document.getElementById('extract-methodology-btn').disabled = true;
+            uploadedFileData = null;
+        }
+
+        function updateStats() {
+            document.getElementById('papers-count').textContent = papersCount;
+            document.getElementById('methodology-count').textContent = methodologyCount;
+        }
+
+        function addActivity(text, type) {
+            const activityList = document.getElementById('activity-list');
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            
+            const icon = type === 'upload' ? 'fa-upload' : 'fa-cogs';
+            activityItem.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${text}</span>
+            `;
+            
+            activityList.insertBefore(activityItem, activityList.firstChild);
+            
+            // Keep only last 5 activities
+            const activities = activityList.querySelectorAll('.activity-item');
+            if (activities.length > 5) {
+                activityList.removeChild(activities[activities.length - 1]);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
