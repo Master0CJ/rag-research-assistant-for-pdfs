@@ -82,7 +82,7 @@ graph TB
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rashmithahansamal/rag-research-assistant-for-pdfs.git
+   git clone https://github.com/Master0CJ/rag-research-assistant-for-pdfs.git
    cd rag-research-assistant-for-pdfs
    ```
 
